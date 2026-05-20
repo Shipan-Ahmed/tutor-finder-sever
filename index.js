@@ -34,7 +34,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.send('Hello World! This is tutor finder server');
 });
 
 app.listen(port, () => {
