@@ -8,7 +8,7 @@ const port = process.env.PORT;
 app.use(cors());
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.DB_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -35,11 +35,19 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/tutors/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id, "id");
+            const query = { _id: new ObjectId(id) };
+            const result = await tutorCollection.findOne(query);
+            res.send(result);
+        });
+
         app.post('/tutors', async (req, res) => {
             const tutor = req.body;
             const result = await tutorCollection.insertOne(tutor);
             res.send(result);
-        })
+        });
 
 
         // Send a ping to confirm a successful connection
