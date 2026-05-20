@@ -29,10 +29,21 @@ async function run() {
         const database = client.db("tutor-finder");
         const tutorCollection = database.collection("tutors");
 
-        app.get('/tutors', async (req, res) => {
-            const cursor = tutorCollection.find();
-            const result = await cursor.toArray();
-            res.send(result);
+        app.get("/tutors", async (req, res) => {
+            try {
+                const limit = parseInt(req.query.limit);
+                let query = tutorCollection.find();
+                // if limit exists
+                if (limit) {
+                    query = query.limit(limit);
+                }
+                const result = await query.toArray();
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({
+                    message: "Failed to fetch tutors"
+                });
+            }
         });
 
         app.get('/tutors/:id', async (req, res) => {
@@ -49,6 +60,17 @@ async function run() {
             res.send(result);
         });
 
+        app.patch("/tutors/decrease-slot/:id", async (req, res) => {
+            const id = req.params.id;
+            const result = await tutorCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $inc: { totalSlot: -1 } }
+            )
+
+            res.send(result)
+
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
@@ -62,9 +84,9 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-  res.send('Hello World! This is tutor finder serverhue');
+    res.send('Hello World! This is tutor finder serverhue');
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+    console.log(`Example app listening at http://localhost:${port}`);
 });
