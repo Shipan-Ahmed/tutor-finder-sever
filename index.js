@@ -86,19 +86,56 @@ async function run() {
 
             try {
 
-                const limit =
-                    parseInt(req.query.limit);
+                const {
+                    search,
+                    startDate,
+                    endDate,
+                    limit
+                } = req.query;
 
-                let query =
-                    tutorCollection.find();
+                let query = {};
+
+                // Search by tutor name
+                if (search) {
+
+                    query.tutorName = {
+                        $regex: search,
+                        $options: "i"
+                    };
+
+                }
+
+                // Date filtering
+                if (startDate || endDate) {
+
+                    query.sessionDate = {};
+
+                    if (startDate) {
+                        query.sessionDate.$gte =
+                            startDate;
+                    }
+
+                    if (endDate) {
+                        query.sessionDate.$lte =
+                            endDate;
+                    }
+
+                }
+
+                let cursor =
+                    tutorCollection.find(query);
 
                 if (limit) {
-                    query =
-                        query.limit(limit);
+
+                    cursor =
+                        cursor.limit(
+                            parseInt(limit)
+                        );
+
                 }
 
                 const result =
-                    await query.toArray();
+                    await cursor.toArray();
 
                 res.send(result);
 
@@ -110,8 +147,8 @@ async function run() {
 
                 res.status(500).send({
                     message:
-                        "Failed to fetch tutors",
-                });
+                        "Failed to fetch tutors"
+                })
 
             }
 
@@ -120,7 +157,7 @@ async function run() {
 
         // single tutor details
 
-        app.get("/tutors/:id", verified,  async (req, res) => {
+        app.get("/tutors/:id", verified, async (req, res) => {
 
             try {
 
@@ -294,43 +331,43 @@ async function run() {
 
         // decrease slot after booking
 
-        app.patch( "/tutors/decrease-slot/:id", verified, async (req, res) => {
+        app.patch("/tutors/decrease-slot/:id", verified, async (req, res) => {
 
-                try {
+            try {
 
-                    const id =
-                        req.params.id;
+                const id =
+                    req.params.id;
 
-                    const result =
-                        await tutorCollection.updateOne(
+                const result =
+                    await tutorCollection.updateOne(
 
-                            {
-                                _id:
-                                    new ObjectId(id)
-                            },
+                        {
+                            _id:
+                                new ObjectId(id)
+                        },
 
-                            {
-                                $inc: {
-                                    totalSlot: -1
-                                }
+                        {
+                            $inc: {
+                                totalSlot: -1
                             }
+                        }
 
-                        );
+                    );
 
-                    res.send(result);
-
-                }
-
-                catch {
-
-                    res.status(500).send({
-                        message:
-                            "Slot update failed"
-                    });
-
-                }
+                res.send(result);
 
             }
+
+            catch {
+
+                res.status(500).send({
+                    message:
+                        "Slot update failed"
+                });
+
+            }
+
+        }
         );
 
 
