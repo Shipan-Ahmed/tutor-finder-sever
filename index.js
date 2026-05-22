@@ -16,6 +16,7 @@ const {
     ServerApiVersion,
     ObjectId,
 } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 const uri = process.env.DB_URI;
 
@@ -26,6 +27,40 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     },
 });
+
+
+const JWKS = createRemoteJWKSet(
+    new URL("http://localhost:3000/api/auth/jwks")
+)
+
+const verified = async (req, res, next) => {
+    const header = req?.headers.authorization;
+    console.log("header: ", header);
+    if (!header) {
+        return res.status(401).send({
+            message: "Unauthorized",
+        });
+    }
+    const token = header.split(" ")[1];
+    // if (token === "loggin") {
+    //     next();
+    // }
+    if (!token) {
+        return res.status(401).send({
+            message: "Unauthorized",
+        });
+    }
+    try {
+        const { payload } = await jwtVerify(token, JWKS);
+        console.log("payload:", payload);
+        next();
+    } catch (error) {
+        console.log(error);
+        return res.status(403).send({
+            message: "Forbidden",
+        });
+    }
+}
 
 async function run() {
     try {
@@ -83,10 +118,9 @@ async function run() {
         });
 
 
-
         // single tutor details
 
-        app.get("/tutors/:id", async (req, res) => {
+        app.get("/tutors/:id", verified,  async (req, res) => {
 
             try {
 
@@ -118,7 +152,7 @@ async function run() {
 
         // add tutor
 
-        app.post("/tutors", async (req, res) => {
+        app.post("/tutors", verified, async (req, res) => {
 
             try {
 
@@ -149,7 +183,7 @@ async function run() {
 
         // my tutors
 
-        app.get("/my-tutors", async (req, res) => {
+        app.get("/my-tutors", verified, async (req, res) => {
 
             try {
 
@@ -183,7 +217,7 @@ async function run() {
 
         // update tutor
 
-        app.patch("/tutors/:id", async (req, res) => {
+        app.patch("/tutors/:id", verified, async (req, res) => {
 
             try {
 
@@ -226,7 +260,7 @@ async function run() {
 
         // delete tutor
 
-        app.delete("/tutors/:id", async (req, res) => {
+        app.delete("/tutors/:id", verified, async (req, res) => {
 
             try {
 
@@ -260,9 +294,7 @@ async function run() {
 
         // decrease slot after booking
 
-        app.patch(
-            "/tutors/decrease-slot/:id",
-            async (req, res) => {
+        app.patch( "/tutors/decrease-slot/:id", verified, async (req, res) => {
 
                 try {
 
@@ -310,7 +342,7 @@ async function run() {
 
         // create booking
 
-        app.post("/bookings", async (req, res) => {
+        app.post("/bookings", verified, async (req, res) => {
 
             try {
 
@@ -343,6 +375,7 @@ async function run() {
 
         app.get(
             "/bookings/:email",
+            verified,
             async (req, res) => {
 
                 try {
@@ -391,6 +424,7 @@ async function run() {
 
         app.patch(
             "/bookings/cancel/:id",
+            verified,
             async (req, res) => {
 
                 try {
